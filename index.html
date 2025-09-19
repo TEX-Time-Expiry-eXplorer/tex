@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEX - Time Expiry eXplorer</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    img.banner { width: 100%; margin-bottom: 20px; border-radius: 6px; }
+    h2 { text-align: center; margin-top: 0; font-size: 1.6rem; }
+    label { display: block; margin-top: 12px; font-size: 1rem; }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 15px;
+      padding: 12px;
+      width: 100%;
+      font-size: 1.1rem;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover { background: #444; cursor: pointer; }
+    .result {
+      margin-top: 20px;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      font-size: 1.05rem;
+    }
+    .field { font-weight: bold; }
+    .disclaimer {
+      margin-top: 25px;
+      font-size: 0.9rem;
+      color: #555;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- Banner at the top -->
+  <img src="TEX_banner.png" alt="TEX Banner" class="banner">
+
+  <h2>TEX – Time Expiry eXplorer</h2>
+  <form id="sentenceForm" onsubmit="calculateTEX(); return false;">
+    <label>Imposed Date:
+      <input type="date" id="imposed_date" required>
+    </label>
+    <label>Pretrial Jail Credits (days):
+      <input type="number" id="pretrial_credits" value="0">
+    </label>
+    <label>Sentence Length (years):
+      <input type="number" id="sentence_length" value="0" step="0.1">
+    </label>
+    <label>Release % (e.g. 0.6 for 60%):
+      <input type="number" id="sentence_percentage" value="0.6" step="0.01">
+    </label>
+    <label>Sentence Reduction Credits (days):
+      <input type="number" id="reduction_credits" value="0">
+    </label>
+    <button type="submit">Calculate</button>
+  </form>
+
+  <div id="results" class="result" style="display:none;"></div>
+
+  <!-- Disclaimer footer -->
+  <div class="disclaimer">
+    TEX is provided for educational and informational purposes only.<br>
+    It is not an official Tennessee Department of Correction calculation tool.
+  </div>
+
+  <script>
+    function calculateTEX() {
+      const imposedDateStr = document.getElementById("imposed_date").value;
+      const pretrialCredits = parseInt(document.getElementById("pretrial_credits").value) || 0;
+      const losYears = parseFloat(document.getElementById("sentence_length").value) || 0;
+      const percentage = parseFloat(document.getElementById("sentence_percentage").value) || 0;
+      const srcDays = parseInt(document.getElementById("reduction_credits").value) || 0;
+
+      const imposedDate = new Date(imposedDateStr);
+      const SED = new Date(imposedDate.getTime() - pretrialCredits * 86400000);
+      const losDays = Math.round(losYears * 365.25);
+
+      const FEXP = new Date(SED.getTime() + losDays * 86400000);
+      const EXP = new Date(FEXP.getTime() - srcDays * 86400000);
+
+      const baseRED = new Date(SED.getTime() + losDays * percentage * 86400000);
+      const proportionalSRC = Math.floor(srcDays * percentage);
+      const RED = new Date(baseRED.getTime() - proportionalSRC * 86400000);
+
+      function fmt(d){ return d.toISOString().split('T')[0]; }
+
+      document.getElementById("results").style.display = "block";
+      document.getElementById("results").innerHTML = `
+        <div><span class="field">Sentence Effective Date (SED):</span> ${fmt(SED)}</div>
+        <div><span class="field">Full Expiration Date (FEXP):</span> ${fmt(FEXP)}</div>
+        <div><span class="field">Expiration Date (EXP):</span> ${fmt(EXP)}</div>
+        <div><span class="field">Release Eligibility Date (RED):</span> ${fmt(RED)}</div>
+      `;
+    }
+  </script>
+</body>
+</html>
